@@ -14,6 +14,7 @@ pub struct Config {
     pub background_color: (u8, u8, u8),
     pub transparency: f32,
     pub font_color: (u8, u8, u8),
+    pub prompt_color: (u8, u8, u8),
     pub prompt: String,
     pub cursor_type: CursorType,
     pub time_till_cursor_starts_blinking: u128, // ms
@@ -28,13 +29,18 @@ impl Default for Config {
             font_size: 20.0,
             background_color: (10, 10, 10),
             transparency: 1.0,
-            font_color: (255, 255, 255),
+            prompt_color: (10, 10, 10),
+            font_color: (200, 200, 200),
             prompt: "$ ".to_string(),
-            cursor_type: CursorType::Strich,
+            cursor_type: CursorType::Block,
             time_till_cursor_starts_blinking: 800,
             cursor_blinking_time: 0.6,
         }
     }
+}
+fn float_to_u8(value: f32) -> u8 {
+    let clamped = value.clamp(0.0, 1.0);
+    (clamped * 255.0).round() as u8
 }
 
 struct TerminalWindow {
@@ -49,10 +55,18 @@ struct TerminalWindow {
 impl TerminalWindow {
     fn new(cc: &eframe::CreationContext<'_>, config: Config) -> Self {
         cc.egui_ctx.set_visuals(egui::Visuals {
-            window_fill: egui::Color32::from_rgb(
+            override_text_color: None,
+            window_fill: egui::Color32::from_rgba_unmultiplied(
                 config.background_color.0,
                 config.background_color.1,
                 config.background_color.2,
+                float_to_u8(config.transparency),
+            ),
+            panel_fill: egui::Color32::from_rgba_unmultiplied(
+                config.background_color.0,
+                config.background_color.1,
+                config.background_color.2,
+                float_to_u8(config.transparency),
             ),
             ..Default::default()
         });
@@ -80,20 +94,20 @@ impl TerminalWindow {
         };
 
         fonts.font_data.insert(
-            font_name.to_owned(),
+            used_font_name.to_owned(),
             egui::FontData::from_owned(font_bytes).into(),
         );
         fonts
             .families
             .get_mut(&egui::FontFamily::Proportional)
             .unwrap()
-            .insert(0, font_name.to_owned());
+            .insert(0, used_font_name.to_owned());
 
         fonts
             .families
             .get_mut(&egui::FontFamily::Monospace)
             .unwrap()
-            .push(font_name.to_owned());
+            .push(used_font_name.to_owned());
 
         cc.egui_ctx.set_fonts(fonts);
         let mut style = (*cc.egui_ctx.style()).clone();
@@ -101,6 +115,16 @@ impl TerminalWindow {
             egui::TextStyle::Monospace,
             egui::FontId::new(config.font_size, egui::FontFamily::Monospace),
         );
+        style.text_styles.insert(
+            egui::TextStyle::Body,
+            egui::FontId::new(config.font_size, egui::FontFamily::Monospace),
+        );
+        style.visuals.override_text_color = Some(egui::Color32::from_rgb(
+            config.font_color.0,
+            config.font_color.1,
+            config.font_color.2,
+        ));
+
         cc.egui_ctx.set_style(style);
 
         let now = Instant::now();
