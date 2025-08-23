@@ -1,27 +1,31 @@
+use egui::FontDefinitions;
+
 use crate::{commands, prelude::*};
-enum CursorType {
+pub enum CursorType {
     Block,
     Strich,
     Underline,
 }
 
 pub struct Config {
-    font: String,
-    zoom_level: f32,
-    background_color: (u8, u8, u8),
-    transparency: f32,
-    font_color: (u8, u8, u8),
-    prompt: String,
-    cursor_type: CursorType,
-    time_till_cursor_starts_blinking: u128, // ms
-    cursor_blinking_time: f32,              // s
+    pub font: String,
+    pub zoom_level: f32,
+    pub font_size: f32,
+    pub background_color: (u8, u8, u8),
+    pub transparency: f32,
+    pub font_color: (u8, u8, u8),
+    pub prompt: String,
+    pub cursor_type: CursorType,
+    pub time_till_cursor_starts_blinking: u128, // ms
+    pub cursor_blinking_time: f32,              // s
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            font: "JetBrains Mono".to_string(),
-            zoom_level: 25.0,
+            font: "JetBrainsMono".to_string(),
+            zoom_level: 1.0,
+            font_size: 20.0,
             background_color: (10, 10, 10),
             transparency: 1.0,
             font_color: (255, 255, 255),
@@ -52,7 +56,52 @@ impl TerminalWindow {
             ),
             ..Default::default()
         });
-        cc.egui_ctx.set_zoom_factor(config.zoom_level / 10.0);
+        cc.egui_ctx.set_zoom_factor(config.zoom_level);
+
+        let mut fonts = FontDefinitions::default();
+
+        let font_name = &config.font;
+
+        let (font_bytes, used_font_name) = match font_name.as_str() {
+            "JetBrainsMono" => (
+                include_bytes!("../Fonts/JetBrainsMono.ttf").to_vec(),
+                "JetBrainsMono",
+            ),
+            _ => {
+                eprintln!(
+                    "Warning: Font {} not found. Falling back to JetBrainsMono.",
+                    font_name
+                );
+                (
+                    include_bytes!("../Fonts/JetBrainsMono.ttf").to_vec(),
+                    "JetBrainsMono",
+                )
+            }
+        };
+
+        fonts.font_data.insert(
+            font_name.to_owned(),
+            egui::FontData::from_owned(font_bytes).into(),
+        );
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Proportional)
+            .unwrap()
+            .insert(0, font_name.to_owned());
+
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Monospace)
+            .unwrap()
+            .push(font_name.to_owned());
+
+        cc.egui_ctx.set_fonts(fonts);
+        let mut style = (*cc.egui_ctx.style()).clone();
+        style.text_styles.insert(
+            egui::TextStyle::Monospace,
+            egui::FontId::new(config.font_size, egui::FontFamily::Monospace),
+        );
+        cc.egui_ctx.set_style(style);
 
         let now = Instant::now();
         Self {
@@ -89,9 +138,9 @@ impl eframe::App for TerminalWindow {
                             self.history
                                 .push(format!("{} {}", self.config.prompt, self.current_input));
 
-                            let output = commands::handle(&self.current_input);
-                            if let Some(o) = output {
-                                self.history.push(o);
+                            if self.current_input.len() > 0 {
+                                let output = commands::handle(&self.current_input);
+                                self.history.push(output);
                             }
                             self.current_input.clear();
                             self.last_time_writing = Instant::now();
@@ -123,6 +172,7 @@ impl eframe::App for TerminalWindow {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical()
                 .stick_to_bottom(true)
+                .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
                 .show(ui, |ui| {
                     for line in &self.history {
                         ui.label(line);
