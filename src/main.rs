@@ -11,14 +11,6 @@ fn get_config_path() -> PathBuf {
 fn main() {
     let mut config = window::Config::default();
 
-    // todo:
-    // - mehr fonts
-    // - themes?
-    // - mehr farben bei zb ls oder wenn generell was ausgegben wird (so theme mäßig)
-    // - prompt verbessern (zb option machen dass der path der prompt ist oder wie in zsh mit git
-    // oder beides)
-    // echte config datei auslesen. (vllt rust config datie machen wie jesko)
-
     // config.prompt_color = (255, 0, 0);
     // config.transparency = 0.5;
 
