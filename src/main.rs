@@ -12,7 +12,6 @@ fn main() {
     let mut config = window::Config::default();
 
     // todo:
-    // - die zwei bugs fixxen
     // - mehr fonts
     // - themes?
     // - mehr farben bei zb ls oder wenn generell was ausgegben wird (so theme mäßig)
@@ -20,8 +19,8 @@ fn main() {
     // oder beides)
     // echte config datei auslesen. (vllt rust config datie machen wie jesko)
 
-    // config.prompt_color = (255, 0, 0); // nicht implemented
-    // config.transparency = 0.5; // geht nicht
+    // config.prompt_color = (255, 0, 0);
+    // config.transparency = 0.5;
 
     println!("Config path: {:?}", get_config_path());
 

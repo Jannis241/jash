@@ -29,7 +29,7 @@ impl Default for Config {
             font_size: 20.0,
             background_color: (10, 10, 10),
             transparency: 1.0,
-            prompt_color: (10, 10, 10),
+            prompt_color: (120, 200, 120),
             font_color: (200, 200, 200),
             prompt: "$ ".to_string(),
             cursor_type: CursorType::Block,
@@ -43,9 +43,14 @@ fn float_to_u8(value: f32) -> u8 {
     (clamped * 255.0).round() as u8
 }
 
+enum HistoryLine {
+    Input(String),
+    Output(String),
+}
+
 struct TerminalWindow {
     config: Config,
-    history: Vec<String>,
+    history: Vec<HistoryLine>,
     current_input: String,
     last_time_writing: Instant,
     cursor_visible: bool,
@@ -160,11 +165,11 @@ impl eframe::App for TerminalWindow {
                         }
                         egui::Key::Enter => {
                             self.history
-                                .push(format!("{} {}", self.config.prompt, self.current_input));
+                                .push(HistoryLine::Input(self.current_input.clone()));
 
                             if self.current_input.len() > 0 {
                                 let output = commands::handle(&self.current_input);
-                                self.history.push(output);
+                                self.history.push(HistoryLine::Output(output));
                             }
                             self.current_input.clear();
                             self.last_time_writing = Instant::now();
@@ -193,13 +198,33 @@ impl eframe::App for TerminalWindow {
         }
 
         // Terminal-Feld
+        let prompt_color = egui::Color32::from_rgb(
+            self.config.prompt_color.0,
+            self.config.prompt_color.1,
+            self.config.prompt_color.2,
+        );
+        let prompt_line = |ui: &mut egui::Ui, prompt: &str, text: &str| {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 0.0;
+                ui.label(egui::RichText::new(prompt).color(prompt_color));
+                ui.label(format!(" {}", text));
+            });
+        };
+
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical()
                 .stick_to_bottom(true)
                 .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
                 .show(ui, |ui| {
                     for line in &self.history {
-                        ui.label(line);
+                        match line {
+                            HistoryLine::Input(input) => {
+                                prompt_line(ui, &self.config.prompt, input)
+                            }
+                            HistoryLine::Output(output) => {
+                                ui.label(output);
+                            }
+                        }
                     }
 
                     let cursor_icon = match self.config.cursor_type {
@@ -214,18 +239,27 @@ impl eframe::App for TerminalWindow {
                         " "
                     };
 
-                    ui.label(format!(
-                        "{} {}{}",
-                        self.config.prompt, self.current_input, cursor
-                    ));
+                    prompt_line(
+                        ui,
+                        &self.config.prompt,
+                        &format!("{}{}", self.current_input, cursor),
+                    );
                 });
         });
 
         ctx.request_repaint(); // UI muss jedes Frame neu zeichnen
     }
+
+    // Fenster komplett durchsichtig clearen, die Hintergrundfarbe (mit Alpha) kommt vom Panel
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        [0.0, 0.0, 0.0, 0.0]
+    }
 }
 pub fn create_terminal_window(config: Config) -> Result<(), eframe::Error> {
-    let options = eframe::NativeOptions::default();
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_transparent(true),
+        ..Default::default()
+    };
     eframe::run_native(
         "Jash",
         options,
