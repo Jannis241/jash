@@ -1,15 +1,22 @@
 # jash
 
-Ein kleiner Terminal-Emulator in Rust, den ich nebenbei gebaut hab, hauptsächlich um mal was mit [egui](https://github.com/emilk/egui) zu machen.
+A small terminal emulator with a GUI, written in Rust. I built it on the side, mainly to try out [egui](https://github.com/emilk/egui).
 
-Man tippt einen Befehl ein, der wird über `sh -c` (bzw. `cmd /C` auf Windows) ausgeführt und die Ausgabe landet im Fenster. Kein richtiges PTY, also Sachen wie `vim` oder `htop` gehen (noch) nicht.
+You type a command, it runs through `sh -c` (or `cmd /C` on Windows), and the output is shown in the window. There is no real PTY, so interactive programs like `vim` or `htop` don't work (yet).
 
-## Starten
+## Run
 
-```
+```sh
 cargo run --release
 ```
 
 ## Config
 
-Momentan noch direkt im Code, in `main.rs` über `window::Config`. Da kann man z.B. Schriftgröße, Farben, Prompt, Transparenz und den Cursor (Block, Strich, Underline) einstellen.
+At the moment the config is directly in the code, in `main.rs` (`window::Config`). There you can change the font size, colors, prompt, transparency and the cursor style (block, bar or underline).
+
+## What I learned
+
+- How to build a simple GUI with egui
+- How to run shell commands from Rust and read their output
+- This project could be really interesting in the future and i easily extendable, maybe i will get back to it.
+
